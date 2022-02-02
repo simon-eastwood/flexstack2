@@ -1,0 +1,192 @@
+import { Model, IJsonModel, TabSetNode } from 'flexlayout-react';
+
+import { analyseModel, removeTabset } from './FlexModelUtils';
+import { IAnalyzedModel, IDimensions } from './types';
+
+
+
+var taskTemplateLayout: { name: string, model: IJsonModel } = {
+    name: 'task1',
+    model: {
+        global: {
+            "rootOrientationVertical": false,
+            // "tabSetEnableDivide": false, // it keeps things simpler for moving tabs if all tabsets are labelled with a panel nr
+            // "enableEdgeDock": false, // otherwise the user can create new rows by dragging into the edge
+            //"tabEnableClose": false
+        }, // {tabSetEnableTabStrip:false}, // to have just splitters
+        layout: {
+            "type": "row",
+
+            "children": [
+                {
+                    "type": "tabset",
+                    "selected": 0,
+                    "children": [
+                        {
+                            "type": "tab",
+                            "name": "Comm",
+                            "component": "pdf",
+                            "enableClose": false,
+                            "config": {
+                                "text": "https://www.ibm.com/downloads/cas/GB8ZMQZ3#view=FitH",
+                                "minWidth": 50,
+                                "preferredWidth": 150,
+                                "panelPreferences": [1.1, 1.1, 1.1, 1.1, 1.1]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "tabset",
+                    "selected": 0,
+                    "children": [
+                        {
+                            "type": "tab",
+                            "name": "Letter",
+                            "component": "pdf",
+                            "enableClose": false,
+                            "config": {
+                                "text": "https://ai.stanford.edu/~nilsson/MLBOOK.pdf#view=FitH",
+                                "minWidth": 50,
+                                "preferredWidth": 150,
+                                "panelPreferences": [-1.3, -1.3, 2.1, 2.1, 2.1]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "tabset",
+                    "selected": 0,
+                    "children": [
+                        {
+                            "type": "tab",
+                            "name": "Claims",
+                            "component": "pdf",
+                            "enableClose": false,
+                            "config": {
+                                "text": "https://patentimages.storage.googleapis.com/68/80/73/6a17a66e9ec8c5/US11107588.pdf#view=FitH",
+                                "minWidth": 50,
+                                "preferredWidth": 150,
+                                "panelPreferences": [-1.4, -2.2, -3.2, 3.1, 3.1]
+                            }
+                        }
+                    ]
+                },
+
+                {
+                    "type": "tabset",
+                    "selected": 0,
+                    "children": [
+                        {
+                            "type": "tab",
+                            "name": "Fig",
+                            "component": "image",
+                            "enableClose": false,
+                            "config": {
+                                "text": "https://patentimages.storage.googleapis.com/US20060145019A1/US20060145019A1-20060706-D00000.png",
+                                "minWidth": 250,
+                                "minHeight": 350,
+                                "preferredWidth": 250,
+                                "panelPreferences": [-1.2, -1.2, -1.2, -1.2, 4.1]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "tabset",
+                    "selected": 0,
+                    "children": [
+                        {
+                            "type": "tab",
+                            "name": "AppAn",
+                            "component": "123check",
+                            "enableClose": true,
+                            "config": {
+                                "text": "/flexstack2/123Check_only.png",
+                                "width": 1280,
+                                "minWidth": 774,
+                                "preferredWidth": 1280,
+                                "panelPreferences": [-1.5, 2.1, 3.1, 4.1, 5.1]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+};
+
+
+const getDimensions = (mfe: string): IDimensions => {
+    // hard coded for now....
+
+    switch (mfe) {
+        case 'pdf':
+            return {
+                widthNeeded: 50,
+                widthPreferred: undefined,
+                width: undefined
+            }
+            break;
+        case '123check':
+            return {
+                widthNeeded: 774,
+                widthPreferred: 1280,
+                width: 1280
+            }
+
+            break;
+        case 'image':
+            return {
+                widthNeeded: 250,
+                widthPreferred: undefined,
+                width: undefined
+            }
+
+            break;
+        default:
+            return {
+                widthNeeded: undefined,
+                widthPreferred: undefined,
+                width: undefined
+            }
+            break;
+    }
+}
+
+
+// if maxPanel is undefined, return the canonical model (or in future the user's saved model if there is one, and the canonical model failing that)
+// if maxPanel is defined, transform the model 
+export const loadTemplateModel = (maxPanel?: number) => {
+    let initialModel = Model.fromJson(taskTemplateLayout.model as IJsonModel);
+    let adaptedModel = initialModel;
+    let fullModel: IAnalyzedModel;
+
+
+    // if the caller has specified the nr of panels, then return a model that meets that requirement
+    if (maxPanel) {
+        adaptedModel = removeTabset(initialModel, maxPanel + 1);
+
+        fullModel = analyseModel(adaptedModel, true, true);
+
+    } else { // I have to figure out myself how many panels fit the current viewport
+        const availableWidth = window.innerWidth;
+
+
+        fullModel = analyseModel(initialModel, true, true);
+        // see how many panels there are in the full model
+        let nrPanels = 0;
+        fullModel.model.visitNodes((node) => { if (node.getType() === TabSetNode.TYPE) nrPanels++ });
+
+        // remove tabset one by one until it fits
+        while (nrPanels > 1 && availableWidth < fullModel.widthPreferred) {
+            adaptedModel = removeTabset(fullModel.model, nrPanels);
+            fullModel = analyseModel(adaptedModel, true, true);
+            nrPanels--;
+        }
+
+    }
+
+    return fullModel;
+
+}
