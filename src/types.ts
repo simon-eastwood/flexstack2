@@ -2,11 +2,11 @@ import { Model, Node } from 'flexlayout-react';
 
 export interface IAnalyzedModel {
     model: Model,
-    widthPreferred: number
+    preferredWidth: number
 }
 
 export interface IDimensions {
-    widthNeeded: number | undefined,
-    widthPreferred: number | undefined,
+    minWidth: number | undefined,
+    preferredWidth: number | undefined,
     width: number | undefined
 }

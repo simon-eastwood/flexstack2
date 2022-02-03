@@ -32,11 +32,11 @@ const max = (dimension1: number | undefined, dimension2: number | undefined): nu
 
 const setTabSetSize = (tabset: TabSetNode, updateIfNeeded: boolean, safeToSetWidth: boolean = false): IDimensions => {
     const result: IDimensions = {
-        widthNeeded: undefined,
-        widthPreferred: undefined,
+        minWidth: undefined,
+        preferredWidth: undefined,
         width: undefined
     };
-    console.log("-----------")
+
     // iterate through the tabs to get sizes
     tabset.getChildren().forEach(node => {
         if (node.getType() !== TabNode.TYPE) {
@@ -44,17 +44,17 @@ const setTabSetSize = (tabset: TabSetNode, updateIfNeeded: boolean, safeToSetWid
         }
 
         const tab = node as TabNode;
-        console.log(`tab ${tab.getName()} has ${tab.getConfig().preferredWidth}`)
-        result.widthNeeded = max(result.widthNeeded, getConfig(tab).minWidth);
-        result.width = max(result.width, getConfig(tab).width);
-        result.widthPreferred = max(result.widthPreferred, getConfig(tab).preferredWidth);
+
+        result.minWidth = max(result.minWidth, getConfig(tab)?.minWidth);
+        result.width = max(result.width, getConfig(tab)?.width);
+        result.preferredWidth = max(result.preferredWidth, getConfig(tab)?.preferredWidth);
     })
 
-    if (!result.widthPreferred) {
+    if (!result.preferredWidth) {
         if (result.width) {
-            result.widthPreferred = result.width;
+            result.preferredWidth = result.width;
         } else {
-            result.widthPreferred = result.widthNeeded;
+            result.preferredWidth = result.minWidth;
         }
     }
 
@@ -66,8 +66,8 @@ const setTabSetSize = (tabset: TabSetNode, updateIfNeeded: boolean, safeToSetWid
             width?: number
         };
         const attrs: Attrs = {};
-        if (result.widthNeeded && result.widthNeeded > 0 && tabset.getMinWidth() !== result.widthNeeded) {
-            attrs.minWidth = result.widthNeeded;
+        if (result.minWidth && result.minWidth > 0 && tabset.getMinWidth() !== result.minWidth) {
+            attrs.minWidth = result.minWidth;
         }
         const currentWidth = tabset.getWidth();
         if (!safeToSetWidth && currentWidth) {
@@ -85,12 +85,10 @@ const setTabSetSize = (tabset: TabSetNode, updateIfNeeded: boolean, safeToSetWid
         // Now set the size information collated from the child tabs at the tabset level in the model
         if (Object.keys(attrs).length > 0) {
             const setSize = Actions.updateNodeAttributes(tabset.getId(), attrs);
-            console.log("===>"); console.log(attrs);
             tabset.getModel().doAction(setSize);
         }
     }
-    console.log("tabset has prefferd"); console.log(result);
-    console.log("=============")
+
     return result;
 }
 
@@ -109,9 +107,9 @@ const analyseRow = (row: RowNode, updateIfNeeded: boolean, safeToSetWidth: boole
             const ts = setTabSetSize(node as TabSetNode, updateIfNeeded, setWidth);
 
             if (row.getOrientation() === Orientation.HORZ) {
-                preferredWidth += ts.widthPreferred ? ts.widthPreferred : ts.widthNeeded!;
+                preferredWidth += ts.preferredWidth ? ts.preferredWidth : ts.minWidth!;
             } else {
-                preferredWidth = max(preferredWidth, ts.widthPreferred ? ts.widthPreferred : ts.widthNeeded)!;
+                preferredWidth = max(preferredWidth, ts.preferredWidth ? ts.preferredWidth : ts.minWidth)!;
             }
         } else if (node.getType() === RowNode.TYPE) {
             // recurse for child row
@@ -134,7 +132,7 @@ export const analyseModel = (modelToAnalyse: Model, updateIfNeeded: boolean = tr
 
     const result: IAnalyzedModel = {
         model: modelToAnalyse,
-        widthPreferred: size
+        preferredWidth: size
     }
 
     console.log(result);

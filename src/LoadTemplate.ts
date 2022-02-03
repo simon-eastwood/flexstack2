@@ -1,12 +1,23 @@
-import { Model, IJsonModel, TabSetNode } from 'flexlayout-react';
+import { Model, IJsonModel, TabSetNode, TabNode, Actions } from 'flexlayout-react';
 
 import { analyseModel, removeTabset } from './FlexModelUtils';
 import { IAnalyzedModel, IDimensions } from './types';
 
+const bundleExample = {
+    "id": "igra",
+    "bundle": [
+        {
+            "type": "pdf",
+            "uri": "https://www.ibm.com/downloads/cas/GB8ZMQZ3#view=FitH",
+            "title": "Communication",
+            "doPrecheck": false,
+            "panelPreferences": [1.1, 1.1, 1.1, 1.1, 1.1]
+        }
+    ]
+};
 
-
-var taskTemplateLayout: { name: string, model: IJsonModel } = {
-    name: 'task1',
+const w2wTemplateLayout: { name: string, model: IJsonModel } = {
+    name: 'w2w-template',
     model: {
         global: {
             "rootOrientationVertical": false,
@@ -16,22 +27,21 @@ var taskTemplateLayout: { name: string, model: IJsonModel } = {
         }, // {tabSetEnableTabStrip:false}, // to have just splitters
         layout: {
             "type": "row",
-
             "children": [
                 {
                     "type": "tabset",
                     "selected": 0,
                     "children": [
                         {
+                            "name": "Test",
                             "type": "tab",
-                            "name": "Comm",
                             "component": "pdf",
                             "enableClose": false,
                             "config": {
-                                "text": "https://www.ibm.com/downloads/cas/GB8ZMQZ3#view=FitH",
+                                "uri": "https://ai.stanford.edu/~nilsson/MLBOOK.pdf#view=FitH",
                                 "minWidth": 50,
                                 "preferredWidth": 150,
-                                "panelPreferences": [1.1, 1.1, 1.1, 1.1, 1.1]
+                                "panelPreferences": [-1.3, -1.3, 2.1, 2.1, 2.1]
                             }
                         }
                     ]
@@ -46,7 +56,7 @@ var taskTemplateLayout: { name: string, model: IJsonModel } = {
                             "component": "pdf",
                             "enableClose": false,
                             "config": {
-                                "text": "https://ai.stanford.edu/~nilsson/MLBOOK.pdf#view=FitH",
+                                "uri": "https://ai.stanford.edu/~nilsson/MLBOOK.pdf#view=FitH",
                                 "minWidth": 50,
                                 "preferredWidth": 150,
                                 "panelPreferences": [-1.3, -1.3, 2.1, 2.1, 2.1]
@@ -64,7 +74,7 @@ var taskTemplateLayout: { name: string, model: IJsonModel } = {
                             "component": "pdf",
                             "enableClose": false,
                             "config": {
-                                "text": "https://patentimages.storage.googleapis.com/68/80/73/6a17a66e9ec8c5/US11107588.pdf#view=FitH",
+                                "uri": "https://patentimages.storage.googleapis.com/68/80/73/6a17a66e9ec8c5/US11107588.pdf#view=FitH",
                                 "minWidth": 50,
                                 "preferredWidth": 150,
                                 "panelPreferences": [-1.4, -2.2, -3.2, 3.1, 3.1]
@@ -83,9 +93,8 @@ var taskTemplateLayout: { name: string, model: IJsonModel } = {
                             "component": "image",
                             "enableClose": false,
                             "config": {
-                                "text": "https://patentimages.storage.googleapis.com/US20060145019A1/US20060145019A1-20060706-D00000.png",
+                                "uri": "https://patentimages.storage.googleapis.com/US20060145019A1/US20060145019A1-20060706-D00000.png",
                                 "minWidth": 250,
-                                "minHeight": 350,
                                 "preferredWidth": 250,
                                 "panelPreferences": [-1.2, -1.2, -1.2, -1.2, 4.1]
                             }
@@ -102,7 +111,7 @@ var taskTemplateLayout: { name: string, model: IJsonModel } = {
                             "component": "123check",
                             "enableClose": true,
                             "config": {
-                                "text": "/flexstack2/123Check_only.png",
+                                "uri": "/flexstack2/123Check_only.png",
                                 "width": 1280,
                                 "minWidth": 774,
                                 "preferredWidth": 1280,
@@ -123,31 +132,31 @@ const getDimensions = (mfe: string): IDimensions => {
     switch (mfe) {
         case 'pdf':
             return {
-                widthNeeded: 50,
-                widthPreferred: undefined,
+                minWidth: 50,
+                preferredWidth: undefined,
                 width: undefined
             }
             break;
         case '123check':
             return {
-                widthNeeded: 774,
-                widthPreferred: 1280,
+                minWidth: 774,
+                preferredWidth: 1280,
                 width: 1280
             }
 
             break;
         case 'image':
             return {
-                widthNeeded: 250,
-                widthPreferred: undefined,
+                minWidth: 250,
+                preferredWidth: undefined,
                 width: undefined
             }
 
             break;
         default:
             return {
-                widthNeeded: undefined,
-                widthPreferred: undefined,
+                minWidth: undefined,
+                preferredWidth: undefined,
                 width: undefined
             }
             break;
@@ -155,10 +164,51 @@ const getDimensions = (mfe: string): IDimensions => {
 }
 
 
+const getTemplate = (): Model => {
+    const panels = new Array<TabNode>();
+
+    const template = Model.fromJson(w2wTemplateLayout.model);
+
+    template.visitNodes((node) => {
+        if (node.getType() === TabNode.TYPE) {
+            const tab = node as TabNode; panels.push(tab);
+            /*            if (!tab.getComponent()  || tab.getComponent()?.length === 0 ) {
+                            panels.push(tab);
+                        } */
+        }
+    });
+
+    bundleExample.bundle.forEach((bundleItem) => {
+        const destPref = bundleItem.panelPreferences[panels.length - 1];
+        const destMajor = Math.floor(Math.abs(destPref));
+        const destMinor = Math.round((Math.abs(destPref) === destMajor) ? 0 : (Math.abs(destPref) - destMajor) * 10);
+        const mfeConfig = getDimensions(bundleItem.type);
+
+        let destinationPanel = panels[0]; // default
+        if (destMajor <= panels.length) {
+            destinationPanel = panels[destMajor - 1];
+        }
+
+        const newConfig = { ...destinationPanel.getConfig(), ...mfeConfig, ...bundleItem };
+
+        const attrs = {
+            name: bundleItem.title,
+            component: bundleItem.type,
+            config: newConfig
+        };
+        const set = Actions.updateNodeAttributes(destinationPanel.getId(), attrs);
+        template.doAction(set);
+    });
+
+    panels.forEach(panel => console.log(panel));
+
+    return template;
+}
+
 // if maxPanel is undefined, return the canonical model (or in future the user's saved model if there is one, and the canonical model failing that)
 // if maxPanel is defined, transform the model 
 export const loadTemplateModel = (maxPanel?: number) => {
-    let initialModel = Model.fromJson(taskTemplateLayout.model as IJsonModel);
+    let initialModel = getTemplate();
     let adaptedModel = initialModel;
     let fullModel: IAnalyzedModel;
 
@@ -179,7 +229,7 @@ export const loadTemplateModel = (maxPanel?: number) => {
         fullModel.model.visitNodes((node) => { if (node.getType() === TabSetNode.TYPE) nrPanels++ });
 
         // remove tabset one by one until it fits
-        while (nrPanels > 1 && availableWidth < fullModel.widthPreferred) {
+        while (nrPanels > 1 && availableWidth < fullModel.preferredWidth) {
             adaptedModel = removeTabset(fullModel.model, nrPanels);
             fullModel = analyseModel(adaptedModel, true, true);
             nrPanels--;

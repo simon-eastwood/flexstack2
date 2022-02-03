@@ -22,7 +22,7 @@ function App() {
   const factory = (node: TabNode) => {
     var component = node.getComponent();
     if (component === "text") {
-      return <div dangerouslySetInnerHTML={{ __html: node.getConfig().text }} />
+      return <div dangerouslySetInnerHTML={{ __html: node.getConfig().uri }} />
     } else if (component === "pdf") {
       const iStyles = {
         height: '99%',
@@ -35,19 +35,19 @@ function App() {
         width: '100%',
         overflow: 'hidden'
       }
-      return <div style={cont}>  <iframe src={node.getConfig().text} className="invisible-scrollbar" style={iStyles} scrolling="no" /> </div>
+      return <div style={cont}>  <iframe src={node.getConfig().uri} className="invisible-scrollbar" style={iStyles} scrolling="no" /> </div>
     } else if (component === "image") {
       const s = {
         height: '99%',
         width: '99%'
       }
-      return <img src={node.getConfig().text} style={s} />
+      return <img src={node.getConfig().uri} style={s} />
     } else if (component === "123check") {
       const s = {
         width: '1200px',
         height: '1000px'
       }
-      return <img src={node.getConfig().text} style={s} />
+      return <img src={node.getConfig().uri} style={s} />
     }
   }
 
