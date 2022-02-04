@@ -1,4 +1,4 @@
-import { Model, IJsonModel, TabSetNode, TabNode, Actions } from 'flexlayout-react';
+import { Model, IJsonModel, TabSetNode, TabNode, Actions, Node as FLNode, Action } from 'flexlayout-react';
 
 import { analyseModel, removeTabset } from './FlexModelUtils';
 import { IAnalyzedModel, IDimensions } from './types';
@@ -12,7 +12,37 @@ const bundleExample = {
             "title": "Communication",
             "doPrecheck": false,
             "panelPreferences": [1.1, 1.1, 1.1, 1.1, 1.1]
+        },
+        {
+            "type": "pdf",
+            "uri": "https://ai.stanford.edu/~nilsson/MLBOOK.pdf#view=FitH",
+            "title": "Letter",
+            "doPrechack": false,
+            "panelPreferences": [-1.3, -1.3, 2.1, 2.1, 2.1]
+        },
+        {
+            "type": "pdf",
+            "uri": "https://patentimages.storage.googleapis.com/68/80/73/6a17a66e9ec8c5/US11107588.pdf#view=FitH",
+            "title": "Claims",
+            "doPrechack": false,
+            "panelPreferences": [-1.4, -2.2, -3.2, 3.1, 3.1]
+        },
+        {
+            "type": "image",
+            "uri": "https://patentimages.storage.googleapis.com/US20060145019A1/US20060145019A1-20060706-D00000.png",
+            "title": "figure",
+            "doPrechack": false,
+            "panelPreferences": [-1.2, -1.2, -1.2, -1.2, 4.1]
+        },
+        {
+            "type": "123check",
+            "uri": "/flexstack2/123Check_only.png",
+            "title": "AppAn",
+            "doPrechack": false,
+            "panelPreferences": [-1.5, 2.1, 3.1, 4.1, 5.1]
         }
+
+
     ]
 };
 
@@ -33,15 +63,12 @@ const w2wTemplateLayout: { name: string, model: IJsonModel } = {
                     "selected": 0,
                     "children": [
                         {
-                            "name": "Test",
+                            "name": "",
                             "type": "tab",
-                            "component": "pdf",
+                            "component": "",
                             "enableClose": false,
                             "config": {
-                                "uri": "https://ai.stanford.edu/~nilsson/MLBOOK.pdf#view=FitH",
-                                "minWidth": 50,
-                                "preferredWidth": 150,
-                                "panelPreferences": [-1.3, -1.3, 2.1, 2.1, 2.1]
+
                             }
                         }
                     ]
@@ -52,14 +79,11 @@ const w2wTemplateLayout: { name: string, model: IJsonModel } = {
                     "children": [
                         {
                             "type": "tab",
-                            "name": "Letter",
-                            "component": "pdf",
+                            "name": "",
+                            "component": "",
                             "enableClose": false,
                             "config": {
-                                "uri": "https://ai.stanford.edu/~nilsson/MLBOOK.pdf#view=FitH",
-                                "minWidth": 50,
-                                "preferredWidth": 150,
-                                "panelPreferences": [-1.3, -1.3, 2.1, 2.1, 2.1]
+
                             }
                         }
                     ]
@@ -70,14 +94,11 @@ const w2wTemplateLayout: { name: string, model: IJsonModel } = {
                     "children": [
                         {
                             "type": "tab",
-                            "name": "Claims",
-                            "component": "pdf",
+                            "name": "",
+                            "component": "",
                             "enableClose": false,
                             "config": {
-                                "uri": "https://patentimages.storage.googleapis.com/68/80/73/6a17a66e9ec8c5/US11107588.pdf#view=FitH",
-                                "minWidth": 50,
-                                "preferredWidth": 150,
-                                "panelPreferences": [-1.4, -2.2, -3.2, 3.1, 3.1]
+
                             }
                         }
                     ]
@@ -89,14 +110,10 @@ const w2wTemplateLayout: { name: string, model: IJsonModel } = {
                     "children": [
                         {
                             "type": "tab",
-                            "name": "Fig",
-                            "component": "image",
+                            "name": "",
+                            "component": "",
                             "enableClose": false,
                             "config": {
-                                "uri": "https://patentimages.storage.googleapis.com/US20060145019A1/US20060145019A1-20060706-D00000.png",
-                                "minWidth": 250,
-                                "preferredWidth": 250,
-                                "panelPreferences": [-1.2, -1.2, -1.2, -1.2, 4.1]
                             }
                         }
                     ]
@@ -107,15 +124,11 @@ const w2wTemplateLayout: { name: string, model: IJsonModel } = {
                     "children": [
                         {
                             "type": "tab",
-                            "name": "AppAn",
-                            "component": "123check",
+                            "name": "",
+                            "component": "",
                             "enableClose": true,
                             "config": {
-                                "uri": "/flexstack2/123Check_only.png",
-                                "width": 1280,
-                                "minWidth": 774,
-                                "preferredWidth": 1280,
-                                "panelPreferences": [-1.5, 2.1, 3.1, 4.1, 5.1]
+
                             }
                         }
                     ]
@@ -126,7 +139,7 @@ const w2wTemplateLayout: { name: string, model: IJsonModel } = {
 };
 
 
-const getDimensions = (mfe: string): IDimensions => {
+const getMfeConfig = (mfe: string): IDimensions => {
     // hard coded for now....
 
     switch (mfe) {
@@ -164,6 +177,13 @@ const getDimensions = (mfe: string): IDimensions => {
 }
 
 
+const isEmpty = (tab: TabNode): boolean => {
+    const c = tab.getComponent();
+    const check = !c || c.length === 0;
+    return check;
+}
+
+
 const getTemplate = (): Model => {
     const panels = new Array<TabNode>();
 
@@ -171,10 +191,10 @@ const getTemplate = (): Model => {
 
     template.visitNodes((node) => {
         if (node.getType() === TabNode.TYPE) {
-            const tab = node as TabNode; panels.push(tab);
-            /*            if (!tab.getComponent()  || tab.getComponent()?.length === 0 ) {
-                            panels.push(tab);
-                        } */
+            const tab = node as TabNode;
+            if (isEmpty(tab)) {
+                panels.push(tab);
+            }
         }
     });
 
@@ -182,7 +202,7 @@ const getTemplate = (): Model => {
         const destPref = bundleItem.panelPreferences[panels.length - 1];
         const destMajor = Math.floor(Math.abs(destPref));
         const destMinor = Math.round((Math.abs(destPref) === destMajor) ? 0 : (Math.abs(destPref) - destMajor) * 10);
-        const mfeConfig = getDimensions(bundleItem.type);
+        const mfeConfig = getMfeConfig(bundleItem.type);
 
         let destinationPanel = panels[0]; // default
         if (destMajor <= panels.length) {
@@ -203,6 +223,18 @@ const getTemplate = (): Model => {
     panels.forEach(panel => console.log(panel));
 
     return template;
+}
+
+
+const rmEmptyTabs = (model: Model) => {
+    const rms = new Array<Action>();
+    console.log("deleting");
+    model.visitNodes(node => {
+        if (node.getType() === TabNode.TYPE && isEmpty(node as TabNode)) {
+            rms.push(Actions.deleteTab(node.getId()))
+        }
+    });
+    rms.forEach(action => model.doAction(action));
 }
 
 // if maxPanel is undefined, return the canonical model (or in future the user's saved model if there is one, and the canonical model failing that)
@@ -237,6 +269,12 @@ export const loadTemplateModel = (maxPanel?: number) => {
 
     }
 
+    // Now that all the processing has finished,
+    // delete any empty tabsets in case some panels were not used by the bundle
+    rmEmptyTabs(fullModel.model);
+
+
+    // removing empty tabs will not impact the dimensions, so no need to recalculate
     return fullModel;
 
 }
